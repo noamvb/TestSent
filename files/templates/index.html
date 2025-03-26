@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sentiment Analyzer</h1>
+            <p>Enter text to analyze its sentiment</p>
+        </header>
+        
+        <main>
+            <div class="input-section">
+                <form id="sentiment-form">
+                    <textarea id="text-input" placeholder="Type your text here..."></textarea>
+                    <button type="submit" id="analyze-btn">Analyze Sentiment</button>
+                </form>
+            </div>
+            
+            <div class="result-section" id="result-section">
+                <div class="result-card hidden" id="result-card">
+                    <div class="sentiment-header">
+                        <h2>Sentiment Result</h2>
+                        <span id="sentiment-emoji" class="emoji">🔍</span>
+                    </div>
+                    
+                    <div class="sentiment-details">
+                        <p>Sentiment: <span id="sentiment-value">-</span></p>
+                        
+                        <div class="score-bars">
+                            <div class="score-bar">
+                                <label>Positive:</label>
+                                <div class="bar-container">
+                                    <div class="bar positive" id="positive-bar"></div>
+                                    <span id="positive-score">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="score-bar">
+                                <label>Neutral:</label>
+                                <div class="bar-container">
+                                    <div class="bar neutral" id="neutral-bar"></div>
+                                    <span id="neutral-score">0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="score-bar">
+                                <label>Negative:</label>
+                                <div class="bar-container">
+                                    <div class="bar negative" id="negative-bar"></div>
+                                    <span id="negative-score">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="compound-score">
+                            <p>Compound Score: <span id="compound-score">0.0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('sentiment-form');
+            const resultCard = document.getElementById('result-card');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const textInput = document.getElementById('text-input').value.trim();
+                if (!textInput) {
+                    alert('Please enter text to analyze');
+                    return;
+                }
+                
+                // Show loading state
+                document.getElementById('analyze-btn').textContent = 'Analyzing...';
+                document.getElementById('analyze-btn').disabled = true;
+                
+                // Send request to server
+                fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'text': textInput
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Update UI with results
+                    document.getElementById('sentiment-value').textContent = data.sentiment;
+                    document.getElementById('sentiment-emoji').textContent = data.emoji;
+                    
+                    // Update score bars
+                    const positivePercent = Math.round(data.scores.positive * 100);
+                    const neutralPercent = Math.round(data.scores.neutral * 100);
+                    const negativePercent = Math.round(data.scores.negative * 100);
+                    
+                    document.getElementById('positive-bar').style.width = positivePercent + '%';
+                    document.getElementById('neutral-bar').style.width = neutralPercent + '%';
+                    document.getElementById('negative-bar').style.width = negativePercent + '%';
+                    
+                    document.getElementById('positive-score').textContent = positivePercent + '%';
+                    document.getElementById('neutral-score').textContent = neutralPercent + '%';
+                    document.getElementById('negative-score').textContent = negativePercent + '%';
+                    
+                    document.getElementById('compound-score').textContent = data.scores.compound.toFixed(2);
+                    
+                    // Show result card
+                    resultCard.classList.remove('hidden');
+                    
+                    // Reset button
+                    document.getElementById('analyze-btn').textContent = 'Analyze Sentiment';
+                    document.getElementById('analyze-btn').disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred during analysis. Please try again.');
+                    document.getElementById('analyze-btn').textContent = 'Analyze Sentiment';
+                    document.getElementById('analyze-btn').disabled = false;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
